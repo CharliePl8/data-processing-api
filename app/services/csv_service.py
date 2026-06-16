@@ -154,23 +154,36 @@ def _build_quality_report(df: pd.DataFrame):
 
 # DEF: _prepare_csv_content: Lee y valida el CSV, devolviendo el contenido limpio y el separador detectado sin construir un DataFrame completo.
 def _prepare_csv_content(file: UploadFile, trim_whitespace: bool = True):
-	# Leer el archivo como bytes para poder validar tamaño y decodificación antes de parsear.
-	raw_bytes = file.file.read()
-	file.file.seek(0)  # Reiniciar el puntero del archivo para futuras lecturas
+	# Intentar determinar el tamaño sin cargar todo en memoria usando seek.
+	raw_bytes = None
+	try:
+		file.file.seek(0, io.SEEK_END)
+		size = file.file.tell()
+		file.file.seek(0)
+	except (AttributeError, OSError):
+		# Si no es seekable, leer para medir tamaño (fallback).
+		raw_bytes = file.file.read()
+		size = len(raw_bytes)
+		file.file.seek(0)
 
 	# Validar que el archivo no esté vacío.
-	if not raw_bytes:
+	if size == 0:
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail=f"El archivo '{file.filename}' está vacío.",
 		)
 
 	# Validar que el archivo no supere el tamaño máximo permitido.
-	if len(raw_bytes) > MAX_FILE_SIZE_BYTES:
+	if size > MAX_FILE_SIZE_BYTES:
 		raise HTTPException(
 			status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
 			detail=f"El archivo '{file.filename}' supera el tamaño máximo permitido.",
 		)
+
+	# Si no leímos el contenido antes (seek OK), leer ahora para procesarlo.
+	if raw_bytes is None:
+		raw_bytes = file.file.read()
+		file.file.seek(0)  # Reiniciar el puntero del archivo para futuras lecturas
 
 	# Intentar decodificar el contenido del archivo usando la codificación predeterminada y manejar errores de decodificación.
 	try:
