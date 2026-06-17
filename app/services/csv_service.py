@@ -270,10 +270,10 @@ def _prepare_csv_dataframe(file: UploadFile, trim_whitespace: bool = True):
 			na_values=list(NULL_VALUES),
 			keep_default_na=True,
 		)
-	except pd.errors.ParserError as exc:
+	except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, TypeError) as exc:
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
-			detail=f"El archivo '{file.filename}' no tiene un formato CSV válido.",
+			detail=f"El archivo '{file.filename}' no tiene un formato CSV válido o no se pudo interpretar.",
 		) from exc
 
 	if df.empty and len(df.columns) == 0:

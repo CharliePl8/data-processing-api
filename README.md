@@ -1,6 +1,6 @@
-# CSV Reader API
+# DATA-PROCESSING-API
 
-API en FastAPI para cargar, limpiar, inspeccionar y exportar archivos CSV.
+API REST en FastAPI para procesar, validar, limpiar y exportar archivos CSV con soporte para autenticación JWT, vistas previas y análisis básico de datos.
 
 ## Caracteristicas
 
@@ -14,6 +14,8 @@ API en FastAPI para cargar, limpiar, inspeccionar y exportar archivos CSV.
 - Procesamiento por chunks para archivos grandes.
 - Exportacion a JSON o CSV, con seleccion opcional de columnas.
 - Limpieza configurable de espacios en blanco.
+- Autenticacion JWT para endpoints protegidos.
+- Configuracion de seguridad y CORS mediante variables de entorno.
 
 ## Requisitos
 
@@ -26,24 +28,25 @@ Paquetes usados:
 - `uvicorn`
 - `pandas`
 - `python-multipart`
+- `python-jose[cryptography]`
 - `pytest`
 
 ## Instalacion
 
-Si ya tienes el proyecto clonado, activa el entorno virtual e instala las dependencias:
+Si ya tienes el proyecto clonado, activa el entorno virtual e instala las dependencias desde [requirements.txt](requirements.txt):
 
 ### Windows
 
 ```bash
 .venv\Scripts\activate
-python -m pip install fastapi uvicorn pandas python-multipart pytest
+python -m pip install -r requirements.txt
 ```
 
 ### Bash / Git Bash / WSL
 
 ```bash
 source .venv/bin/activate
-python -m pip install fastapi uvicorn pandas python-multipart pytest
+python -m pip install -r requirements.txt
 ```
 
 ## Ejecutar la API
@@ -51,7 +54,7 @@ python -m pip install fastapi uvicorn pandas python-multipart pytest
 Desde la raiz del proyecto:
 
 ```bash
-/csv_reader/.venv/Scripts/python.exe -m uvicorn app.main:app --reload
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 La API quedara disponible en:
@@ -60,10 +63,48 @@ La API quedara disponible en:
 - Documentacion Swagger: http://127.0.0.1:8000/docs
 - ReDoc: http://127.0.0.1:8000/redoc
 
+## Variables de entorno
+
+La API permite ajustar varios parametros sin tocar el codigo:
+
+- `MAX_FILE_SIZE_BYTES`
+- `RATE_LIMIT_REQUESTS`
+- `RATE_LIMIT_WINDOW_SECONDS`
+- `CORS_ORIGINS`
+- `CORS_METHODS`
+- `CORS_HEADERS`
+- `CORS_ALLOW_CREDENTIALS`
+- `CORS_MAX_AGE`
+- `JWT_SECRET_KEY`
+- `JWT_ALGORITHM`
+- `ACCESS_TOKEN_EXPIRE_MINUTES`
+- `API_AUTH_USERNAME`
+- `API_AUTH_PASSWORD`
+
+## Autenticacion
+
+Los endpoints que procesan CSV requieren un token JWT.
+
+### Obtener token
+
+```bash
+curl -X POST "http://127.0.0.1:8000/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=secret-password"
+```
+
+### Usar el token
+
+```bash
+curl -X POST "http://127.0.0.1:8000/preview?limit=5" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "file=@archivo.csv"
+```
+
 ## Ejecutar tests
 
 ```bash
-python -m pytest app/tests/testCsvApi.py
+python -m pytest -q
 ```
 
 ## Endpoints
@@ -71,6 +112,15 @@ python -m pytest app/tests/testCsvApi.py
 ### `GET /health`
 
 Verifica que la API este funcionando.
+
+### `POST /token`
+
+Devuelve un JWT si las credenciales son correctas.
+
+Body (form-data):
+
+- `username`
+- `password`
 
 ### `POST /upload`
 
@@ -167,10 +217,19 @@ Query params:
 
 ## Ejemplos de uso
 
+### Obtener token
+
+```bash
+curl -X POST "http://127.0.0.1:8000/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=secret-password"
+```
+
 ### Subir un archivo
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/upload" \
+  -H "Authorization: Bearer <TOKEN>" \
   -F "file=@archivo.csv"
 ```
 
@@ -194,3 +253,5 @@ curl -X POST "http://127.0.0.1:8000/normalize-dates?date_columns=created_at&date
 - El proyecto detecta separadores comunes como `;`, `,`, tabulacion y `|`.
 - Los valores `NULL` y `[NULL]` se tratan como nulos.
 - La API valida estructura basica antes de procesar el archivo.
+- El CSV debe tener una fila de cabecera y todas las filas deben mantener la misma cantidad de columnas; si una fila no coincide, la API respondera con un error 400.
+- Para despliegues reales, conviene cambiar `JWT_SECRET_KEY` y las credenciales por defecto mediante variables de entorno.
