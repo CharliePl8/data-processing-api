@@ -27,3 +27,19 @@ CORS_HEADERS = ["*"]
 CORS_ALLOW_CREDENTIALS = False
 # Tiempo de caché para respuestas preflight (en segundos)
 CORS_MAX_AGE = 600
+
+# Autenticación JWT
+JWT_SECRET_KEY = "c4f88d92d8bd4f7d87b4ca02c556a22f"  # Cambia esto en producción
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+API_AUTH_USERNAME = "admin"
+API_AUTH_PASSWORD = "secret-password"
+
+# Seguridad HTTP adicional
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "geolocation=()",
+}
+

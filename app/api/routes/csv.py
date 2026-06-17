@@ -2,7 +2,7 @@ from typing import List
 
 import json
 
-from fastapi import APIRouter, File, Query, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile
 
 from app.services.csv_service import (
 	get_csv_metadata,
@@ -15,6 +15,7 @@ from app.services.csv_service import (
 	get_csv_chunk_summary,
 	validate_csv_schema,
 )
+from app.core.security import verify_token
 
 router = APIRouter()
 
@@ -26,7 +27,11 @@ async def health_check():
 
 # Endpoint para subir un archivo CSV y convertirlo a JSON
 @router.post("/upload")
-async def upload_csv(file: UploadFile = File(...), trim_whitespace: bool = Query(True)):
+async def upload_csv(
+	file: UploadFile = File(...),
+	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
+):
 	return await read_csv_file(file, trim_whitespace=trim_whitespace)
 
 
@@ -37,6 +42,7 @@ async def preview_csv(
 	limit: int = Query(5, ge=1, le=1000),
 	columns: List[str] | None = Query(None),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	return await preview_csv_file(
 		file,
@@ -48,7 +54,11 @@ async def preview_csv(
 
 # Endpoint para obtener metadatos del CSV sin devolver todos los datos
 @router.post("/metadata")
-async def metadata_csv(file: UploadFile = File(...), trim_whitespace: bool = Query(True)):
+async def metadata_csv(
+	file: UploadFile = File(...),
+	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
+):
 	return await get_csv_metadata(file, trim_whitespace=trim_whitespace)
 
 
@@ -60,6 +70,7 @@ async def normalize_dates_csv(
 	columns: List[str] | None = Query(None),
 	output_format: str = Query("%Y-%m-%d"),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	return await normalize_csv_dates(
 		file,
@@ -76,6 +87,7 @@ async def quality_report_csv(
 	file: UploadFile = File(...),
 	columns: List[str] | None = Query(None),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	return await get_csv_quality_report(
 		file,
@@ -92,6 +104,7 @@ async def chunk_summary_csv(
 	sample_rows: int = Query(5, ge=1, le=1000),
 	columns: List[str] | None = Query(None),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	return await get_csv_chunk_summary(
 		file,
@@ -108,6 +121,7 @@ async def export_json_csv(
 	file: UploadFile = File(...),
 	columns: List[str] | None = Query(None),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	result = await read_csv_file(
 		file,
@@ -129,6 +143,7 @@ async def export_csv(
 	file: UploadFile = File(...),
 	columns: List[str] | None = Query(None),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	result = await export_csv_file(
 		file,
@@ -150,6 +165,7 @@ async def validate_schema_csv(
 	file: UploadFile = File(...),
 	required_columns: List[str] = Query(...),
 	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
 ):
 	return await validate_csv_schema(
 		file,
@@ -160,5 +176,9 @@ async def validate_schema_csv(
 
 # Endpoint para subir múltiples archivos CSV y convertirlos a JSON
 @router.post("/upload-multiple")
-async def upload_multiple_csv(files: List[UploadFile] = File(...), trim_whitespace: bool = Query(True)):
+async def upload_multiple_csv(
+	files: List[UploadFile] = File(...),
+	trim_whitespace: bool = Query(True),
+	_token: dict = Depends(verify_token),
+):
 	return await read_multiple_csv_files(files, trim_whitespace=trim_whitespace)

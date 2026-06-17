@@ -2,15 +2,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.auth import router as auth_router
 from app.api.routes.csv import router as csv_router
-from app.middleware.rate_limit import RateLimitMiddleware
 from app.core.config import (
-	CORS_ORIGINS,
-	CORS_METHODS,
-	CORS_HEADERS,
 	CORS_ALLOW_CREDENTIALS,
+	CORS_HEADERS,
 	CORS_MAX_AGE,
+	CORS_METHODS,
+	CORS_ORIGINS,
 )
+from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 
 
 app = FastAPI(title="CSV API", description="API para manejar archivos CSV y convertirlos a JSON", version="1.0.0")
@@ -25,9 +27,13 @@ app.add_middleware(
 	max_age=CORS_MAX_AGE,
 )
 
+# Middleware de seguridad HTTP
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Añadir middleware de rate limiting
 app.add_middleware(RateLimitMiddleware)
 
+app.include_router(auth_router)
 app.include_router(csv_router)
 
 
