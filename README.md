@@ -107,6 +107,21 @@ curl -X POST "http://127.0.0.1:8000/preview?limit=5" \
 python -m pytest -q
 ```
 
+## Estructura del proyecto
+
+- `app/main.py`: inicialización de la API y middlewares.
+- `app/api/routes/`: endpoints HTTP de la aplicación.
+- `app/services/`: lógica de lectura, validación y transformación de CSV.
+- `app/core/`: configuración y seguridad.
+- `app/tests/`: pruebas de la API.
+
+## Flujo de autenticación
+
+1. El cliente hace `POST /token` con usuario y contraseña.
+2. Si las credenciales son válidas, la API devuelve un JWT.
+3. El cliente envía ese token en el header `Authorization: Bearer <TOKEN>`.
+4. Los endpoints protegidos validan el token antes de procesar cualquier CSV.
+
 ## Endpoints
 
 ### `GET /health`
